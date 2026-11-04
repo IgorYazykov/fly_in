@@ -2,66 +2,16 @@ from pydantic import BaseModel, Field, ConfigDict
 import os
 from pathlib import Path
 from typing import Any
-from enum import StrEnum
-
-
-class ZoneType(StrEnum):
-	NORMAL = "normal"
-	BLOCKED = "blocked"
-	RESTRICTED = "restricted"
-	PRIORITY = "priority"
-
-
-class ColorType(StrEnum):
-	RED = "red"
-	GREEN = "green"
-	BLUE = "blue"
-	YELLOW = "yellow"
-	ORANGE = "orange"
-	PURPLE = "purple"
-	PINK = "pink"
-	BLACK = "black"
-	WHITE = "white"
-	GREY = "grey"
-	BROWN = "brown"
-	CYAN = "cyan"
-	MAGENTA = "magenta"
-
-
-class Node(BaseModel):
-	model_config = ConfigDict(validate_assignment=True)
-	name: str = Field(default="")
-	x: int = Field(default=0)
-	y: int = Field(default=0)
-	color: ColorType = Field(default="white")
-	zone: ZoneType | None = None
-	max_drones: int = Field(default=1, gt=0)
-	neigbords: list[str] = Field(default_factory=list)
-
-
-class Connection(BaseModel):
-	model_config = ConfigDict(validate_assignment=True)
-	hub_s: Node = Field(default_factory=Node)
-	hub_e: Node = Field(default_factory=Node)
-	max_link_capacity: int | None = Field(default=None, gt=0)
-
-
-class Graph(BaseModel):
-	model_config = ConfigDict(validate_assignment=True)
-	name: str = Field(default="")
-	nb_drones: int = Field(default=1, gt=0)
-	start: Node = Field(default_factory=Node)
-	end: Node = Field(default_factory=Node)
-	nodes: list[Node] = Field(default_factory=list)
-	connections: list[Connection] = Field(default_factory=list)
-
+from .structures import Node, Connection, Nodes_holder
+from .validator import Validator
 
 class FileHandeler(BaseModel):
 	model_config = ConfigDict(validate_assignment=True)
+	validator: Validator = Field(default_factory=Validator)
 	target_files: list[Any] = Field(default_factory=list)
 	files_with_maps: list[Any] = Field(default_factory=list)
 	names_levels: list[str] = Field(default_factory=list)
-	list_with_maps: list[Graph] = Field(default_factory=list)
+	list_with_maps: list[Nodes_holder] = Field(default_factory=list)
 
 	def text_file_finder(self):
 		levels = Path('maps_test')
@@ -86,7 +36,7 @@ class FileHandeler(BaseModel):
 		for i in range(len(recived_levels)):
 			pass_to_files = [file for file in recived_levels[i].iterdir() if file.is_file() and file.suffix == '.txt']
 			if not pass_to_files:
-				print(f"'{self.names_levels[i]}' has not '.txt' files!")
+				print(f"'{self.names_levels[i]}' has not '.txt' files!\n")
 				self.names_levels[i] = None
 			else:
 				self.target_files.append(pass_to_files)
@@ -94,67 +44,7 @@ class FileHandeler(BaseModel):
 		if not self.target_files:
 			raise Exception('All level directories don`t have ".txt" files!' )
 
-	def coord_take(self, coord: str, coord_type: str, node: Node, file: Any) -> int:
-		try:
-			setattr(node, coord_type, int(coord))
-		except Exception as err:
-			print(f'"{err}" in the file "{file}"\n')
-			return (1)
-
-	def save_metadata(self, data_part: str, type: str, node: Node, file: Any) -> int:
-		try:
-			setattr(node,  type, data_part)
-		except Exception:
-			if type == 'color':
-				print(f'Incorect value for color: "{data_part}"\nIn the file "{file}"\n')
-			if type == 'zone':
-				print(f'Incorect value for zone: "{data_part}"\nIn the file "{file}"\n')
-			if type == 'max_drones':
-				print(f'Incorect value for max_drones: "{data_part}"\nIn the file "{file}"\n')
-			return(1)
-
-	def dub_error_in_meta(self, type_meta: str, file: Any) -> int:
-		print(f'Dublicate of "{type_meta}"!\nIn the file "{file}"\n')
-		return (1)
-
-	def metadata_cheker(self, list_metadata: list[str], node: Node, type_hub: str, file: Any) -> int:
-		color_detected = False
-		max_drones_detected = False
-		zone_detected = False
-		for metadata in list_metadata:
-			data_parts = metadata.split("=")
-			if len(data_parts) != 2:
-				print(f'Incorrect metadata - "{metadata}"\nIn the file "{file}"\n')
-				return (1)
-			if data_parts[0] == 'color':
-				if not color_detected:
-					color_detected = True
-				else:
-					return self.dub_error_in_meta(data_parts[0], file)
-				if self.save_metadata(data_parts[1], 'color', node, file) == 1:
-					return (1)
-			if data_parts[0] == 'max_drones':
-				if not max_drones_detected:
-					max_drones_detected = True
-				else:
-					return self.dub_error_in_meta(data_parts[0])
-				if self.save_metadata(data_parts[1], 'max_drones', node, file) == 1:
-					return (1)
-			if data_parts[0] == 'zone':
-				if not zone_detected:
-					zone_detected = True
-				else:
-					return self.dub_error_in_meta(data_parts[0], file)
-				if (type_hub == 'start_hub'
-				    or type_hub == 'end_hub'
-					and data_parts[1] == 'blocked'):
-					print(f'{type_hub} can`t be with blocked type of zone!\nIn the file "{file}"\n')
-					return (1)
-				if self.save_metadata(data_parts[1], 'zone', node, file) == 1:
-					return (1)
-		return (0)
-
-	def check_hubs(self, line: str, type_hub: str, tmp_map: Graph, sequence_area: bool, file: Any) -> int:
+	def check_hubs(self, line: str, type_hub: str, tmp_map: Nodes_holder, sequence_area: bool, file: Any) -> int:
 		if sequence_area:
 			print(f'Wrong sequence! "{line}" - inside of connection area\nIn the file "{file}"\n')
 			return (1)
@@ -180,8 +70,8 @@ class FileHandeler(BaseModel):
 			return(1)
 		new_node.name = parts_of_atr[0]
 
-		if (self.coord_take(parts_of_atr[1], 'x', new_node, file) == 1
-			or self.coord_take(parts_of_atr[2], 'y', new_node, file) == 1):
+		if (self.validator.coord_take(parts_of_atr[1], 'x', new_node, file) == 1
+			or self.validator.coord_take(parts_of_atr[2], 'y', new_node, file) == 1):
 			return (1)
 
 		if len(parts_of_atr) > 3:
@@ -189,7 +79,7 @@ class FileHandeler(BaseModel):
 			if len(list_metadata) > 3:
 				print(f'Incorrect metadata - "{list_metadata}"\nIn the file "{file}"\n')
 				return (1)
-			if self.metadata_cheker(list_metadata, new_node, type_hub, file) == 1:
+			if self.validator.metadata_cheker(list_metadata, new_node, type_hub, file) == 1:
 				return (1)
 
 		if type_hub == 'start_hub':
@@ -197,49 +87,10 @@ class FileHandeler(BaseModel):
 		if type_hub == 'hub':
 			tmp_map.nodes.append(new_node)
 		if type_hub == 'end_hub':
-			tmp_map.start = new_node
+			tmp_map.end = new_node
 		return (0)
 
-		
-	def check_spec_lines(self, text: list[str], file: Any, type_hub: str) -> int:
-		nb_of_target_lines = sum(1 for line in text if line.startswith(type_hub))
-		if nb_of_target_lines == 0:
-			print(f'File "{file}" has not a "{type_hub}" field!\n')
-			return (1)
-		elif nb_of_target_lines > 1:
-			print(f'Dublicate key of key "{type_hub}" in file "{file}"\n')
-			return (1)
-		return (0)
-
-	def check_all_lines(self, text: list[str], file: Any) -> int:
-		list_spec_line = ['nb_drones:', 'start_hub:', 'end_hub:']
-		for spec_line in list_spec_line:
-			if self.check_spec_lines(text, file, spec_line) == 1:
-				return (1)
-		if not any('connection:' in line for line in text):
-			print(f'File "{file}" has not a connection field!\n')
-			return (1)
-		return (0)
-
-	def check_name_connections(self, file: Any, tmp_map: Graph, connection: Connection, names: list[str]) -> int:
-		for name in names:
-			if (name not in [node.name for node in tmp_map.nodes]
-			    or name != tmp_map.start.name
-				or name != tmp_map.end.name ):
-				print(f'It`s  wrong name "{name}"! It not exist in hubs.\nIn file "{file}"\n')
-				return (1)
-		for con in tmp_map.connections:
-			if ((names[0] == con.hub_s.name
-			    and names[1] == con.hub_e.name)
-				or (names[1] == con.hub_s.name
-			    and names[0] == con.hub_e.name)):
-				print(f'Connection with names"{names}", already exist!\nIn file "{file}"\n')
-				return (1)
-		# for name in names:
-
-		return (0)
-
-	def conection_checker(self, file: Any, tmp_map: Graph, line: str) -> int:
+	def conection_checker(self, file: Any, tmp_map: Nodes_holder, line: str) -> int:
 		parts = line.split(":", maxsplit=1)
 		parts_of_data = parts[1].strip().split(" ")
 		if len(parts_of_data) > 2:
@@ -254,9 +105,16 @@ class FileHandeler(BaseModel):
 
 		connection = Connection()
 		names = parts_of_data[0].split("-")
-		if self.check_name_connections(file, tmp_map, connection, names) == 1:
+		if self.validator.check_name_connections(file, tmp_map, connection, names) == 1:
 			return (1)
-		tmp_map.connections.append(Connection)
+		if len(parts_of_data) > 1:
+			meta_data = parts_of_data[1].strip("[]").split("=")
+			if len(meta_data) != 2:
+				print(f'Incorect metadata - "{parts_of_data[1]}"\nIn the file "{file}"\n')
+				return (1)
+			if self.validator.check_meta_for_con(file, connection, meta_data) == 1:
+				return (1)
+		tmp_map.connections.append(connection)
 
 
 	def file_checker(self, file: Any) -> int:
@@ -278,10 +136,11 @@ class FileHandeler(BaseModel):
 					continue
 				text.append(line_s)
 
-			if self.check_all_lines(text, file) == 1:
+			if self.validator.check_all_lines(text, file) == 1:
 				return (1)
 
-			tmp_map = Graph()
+			tmp_map = Nodes_holder()
+			tmp_map.name = str(file.name)
 			sequence_area = False
 			for i in range(len(text)):
 				if i == 0:
@@ -310,7 +169,7 @@ class FileHandeler(BaseModel):
 						sequence_area = True
 					if self.conection_checker(file, tmp_map, text[i]) == 1:
 						return (1)
-					
+			self.list_with_maps.append(tmp_map)
 		return (0)
 
 	def text_file_handeler(self):
@@ -323,7 +182,3 @@ class FileHandeler(BaseModel):
 
 		if not self.files_with_maps:
 			raise Exception('All files are empty or incorrect!')
-		print(self.files_with_maps)
-
-		
-				
