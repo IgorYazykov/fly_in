@@ -1,5 +1,9 @@
 from pydantic import BaseModel, Field, ConfigDict
 from enum import StrEnum
+from abc import ABC, abstractmethod
+from .file_handeler import FileHandeler
+import pygame
+from typing import Any
 
 
 class ZoneType(StrEnum):
@@ -51,3 +55,29 @@ class Nodes_holder(BaseModel):
 	end: Node = Field(default_factory=Node)
 	nodes: list[Node] = Field(default_factory=list)
 	connections: list[Connection] = Field(default_factory=list)
+
+
+class MenuGeneral(ABC):
+	def __init__(self):
+		self.fileOperator = FileHandeler()
+		self.names: list[str] = []
+		self.links: list[str] = []
+		self.list_rect: list[pygame.Rect] = []
+		self.list_sur_text: list[Any] = []
+		self.list_text_rect: list[Any] = []
+
+	@abstractmethod
+	def take_data(self):
+		pass
+
+	@abstractmethod
+	def update_metric(self, width: int, height: int):
+		pass
+
+	@abstractmethod
+	def draw_menu(self, surface: pygame.Surface):
+		pass
+
+	@abstractmethod
+	def handle_click(self, mouse_pos: tuple[int, int]) -> Any:
+		pass
