@@ -1,7 +1,9 @@
 import pygame
 from typing import Any
-from .scenes import MenuGeneral, MenuDirectori, MenuTXT, Animation
+from .menu_scenes import MenuGeneral, MenuDirectori, MenuTXT
+from .animation_scene import Animation
 from .parser import Parser
+from .structures import Nodes_holder
 
 
 class GameCenter():
@@ -22,15 +24,21 @@ class GameCenter():
 		self.height = y
 		if isinstance(self.current_scene, MenuGeneral):
 			self.current_scene.update_metric(self.width, self.height)
+		elif isinstance(self.current_scene, Animation): 
+			pass
 
-	def change_scene(self, target_scene: str, file: Any = None):
-		if file == None:
+	def change_scene(self, target_scene: str, data: Any = None):
+		if data == None:
 			self.current_scene = self.scenes[target_scene]()
+		elif isinstance(data, Nodes_holder):
+			self.current_scene = self.scenes[target_scene](data)
 		else:
-			self.current_scene = self.scenes[target_scene](file)
+			self.current_scene = self.scenes[target_scene](data)
 
 	def drawing_handeler(self, surface: pygame.Surface):
 		if isinstance(self.current_scene, MenuGeneral):
+			self.current_scene.draw_menu(surface)
+		if isinstance(self.current_scene, Animation):
 			self.current_scene.draw_menu(surface)
 
 	def game_click_handeler(self, mouse_pos: tuple[int, int]):
@@ -50,9 +58,12 @@ class GameCenter():
 				if self.parser.file_checker(res) == 1:
 					pass
 				else:
-					self.change_scene('animation')
-					self.current_scene.pri()
-			print(res) 
+					node_map = self.parser.get_map()
+					self.change_scene('animation', node_map)
+					if (self.current_scene.init_img() == 1):
+						self.current_scene = self.scenes["menu_dir"]()
+					else:
+						self.current_scene.update_metric(self.width, self.height)
 
 	def main_loop(self):
 		pygame.init()

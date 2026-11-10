@@ -162,7 +162,3 @@ class MenuTXT(MenuGeneral):
 						return (self.links[i])
 		return None
 
-
-class Animation():
-	def pri(self):
-		print('Animation')

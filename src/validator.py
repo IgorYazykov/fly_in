@@ -43,14 +43,14 @@ class Validator(BaseModel):
 					return self.dub_error_in_meta(data_parts[0], file)
 				if self.save_metadata(data_parts[1], 'color', node, file) == 1:
 					return (1)
-			if data_parts[0] == 'max_drones':
+			elif data_parts[0] == 'max_drones':
 				if not max_drones_detected:
 					max_drones_detected = True
 				else:
 					return self.dub_error_in_meta(data_parts[0], file)
 				if self.save_metadata(data_parts[1], 'max_drones', node, file) == 1:
 					return (1)
-			if data_parts[0] == 'zone':
+			elif data_parts[0] == 'zone':
 				if not zone_detected:
 					zone_detected = True
 				else:
@@ -62,6 +62,9 @@ class Validator(BaseModel):
 					return (1)
 				if self.save_metadata(data_parts[1], 'zone', node, file) == 1:
 					return (1)
+			else:
+				print(f'Incorect name of metadata: "{data_parts[0]}"\nIn the file "{file}"\n')
+				return (1)
 		return (0)
 		
 	def check_spec_lines(self, text: list[str], file: Any, type_hub: str) -> int:

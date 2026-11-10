@@ -48,9 +48,9 @@ class Parser(BaseModel):
 	target_files: list[Any] = Field(default_factory=list)
 	files_with_maps: list[Any] = Field(default_factory=list)
 	names_levels: list[str] = Field(default_factory=list)
-	list_with_maps: list[Nodes_holder] = Field(default_factory=list)
+	tmp_map: Nodes_holder = Field(default_factory=Nodes_holder)
 
-	def check_hubs(self, line: str, type_hub: str, tmp_map: Nodes_holder, sequence_area: bool, file: Any) -> int:
+	def check_hubs(self, line: str, type_hub: str, sequence_area: bool, file: Any) -> int:
 		if sequence_area:
 			print(f'Wrong sequence! "{line}" - inside of connection area\nIn the file "{file}"\n')
 			return (1)
@@ -69,9 +69,9 @@ class Parser(BaseModel):
 			print(f'Character "-" detectet in name: "{line}"\nIn the file "{file}"\n')
 			return (1)
 		if any(parts_of_atr[0]
-		       in name for name in [tmp_map.start.name,
-		                            *(node.name for node in tmp_map.nodes),
-									tmp_map.end.name]):
+		       in name for name in [self.tmp_map.start.name,
+		                            *(node.name for node in self.tmp_map.nodes),
+									self.tmp_map.end.name]):
 			print(f'Dyplicate of name - "{parts_of_atr[0]}"\nIn the file "{file}"\n')
 			return(1)
 		new_node.name = parts_of_atr[0]
@@ -89,14 +89,14 @@ class Parser(BaseModel):
 				return (1)
 
 		if type_hub == 'start_hub':
-			tmp_map.start = new_node
+			self.tmp_map.start = new_node
 		if type_hub == 'hub':
-			tmp_map.nodes.append(new_node)
+			self.tmp_map.nodes.append(new_node)
 		if type_hub == 'end_hub':
-			tmp_map.end = new_node
+			self.tmp_map.end = new_node
 		return (0)
 
-	def conection_checker(self, file: Any, tmp_map: Nodes_holder, line: str) -> int:
+	def conection_checker(self, file: Any, line: str) -> int:
 		parts = line.split(":", maxsplit=1)
 		parts_of_data = parts[1].strip().split(" ")
 		if len(parts_of_data) > 2:
@@ -111,7 +111,7 @@ class Parser(BaseModel):
 
 		connection = Connection()
 		names = parts_of_data[0].split("-")
-		if self.validator.check_name_connections(file, tmp_map, connection, names) == 1:
+		if self.validator.check_name_connections(file, self.tmp_map, connection, names) == 1:
 			return (1)
 		if len(parts_of_data) > 1:
 			meta_data = parts_of_data[1].strip("[]").split("=")
@@ -120,7 +120,7 @@ class Parser(BaseModel):
 				return (1)
 			if self.validator.check_meta_for_con(file, connection, meta_data) == 1:
 				return (1)
-		tmp_map.connections.append(connection)
+		self.tmp_map.connections.append(connection)
 
 
 	def file_checker(self, file: Any) -> int:
@@ -145,15 +145,15 @@ class Parser(BaseModel):
 			if self.validator.check_all_lines(text, file) == 1:
 				return (1)
 
-			tmp_map = Nodes_holder()
-			tmp_map.name = str(file.name)
+			self.tmp_map = Nodes_holder()
+			self.tmp_map.name = str(file.name)
 			sequence_area = False
 			for i in range(len(text)):
 				if i == 0:
 					if text[i].startswith('nb_drones:'):
 						text_elem = text[i].split(":", maxsplit = 1)
 						try:
-							tmp_map.nb_drones = text_elem[1].strip()
+							self.tmp_map.nb_drones = text_elem[1].strip()
 						except Exception:
 							print(f'Number of drons must be integer and more then 0!\nIn file "{file}"\n')
 							return (1)
@@ -161,30 +161,33 @@ class Parser(BaseModel):
 						print(f'"{file}" has not "nb_drones" on first line!\n')
 						return (1)
 				if text[i].startswith('start_hub:'):
-					if self.check_hubs(text[i], 'start_hub', tmp_map, sequence_area, file) == 1:
+					if self.check_hubs(text[i], 'start_hub', sequence_area, file) == 1:
 						return (1)
 				if text[i].startswith('end_hub:'):
-					if self.check_hubs(text[i], 'end_hub', tmp_map, sequence_area, file) == 1:
+					if self.check_hubs(text[i], 'end_hub', sequence_area, file) == 1:
 						return (1)
 				if text[i].startswith('hub:'):
-					if self.check_hubs(text[i], 'hub', tmp_map, sequence_area, file) == 1:
+					if self.check_hubs(text[i], 'hub', sequence_area, file) == 1:
 						return (1)
 
 				if text[i].startswith('connection:'):
 					if not sequence_area:
 						sequence_area = True
-					if self.conection_checker(file, tmp_map, text[i]) == 1:
+					if self.conection_checker(file, text[i]) == 1:
 						return (1)
-			self.list_with_maps.append(tmp_map)
 		return (0)
 
-	def text_file_handeler(self):
-		for files_list in self.target_files:
-			for file in files_list:
-				if self.file_checker(file) == 1:
-					continue
-				else:
-					self.files_with_maps.append(file)
+	def get_map(self) -> Nodes_holder:
+		return self.tmp_map
 
-		if not self.files_with_maps:
-			raise Exception('All files are empty or incorrect!')
+	# def text_file_handeler(self):
+	# 	for files_list in self.target_files:
+	# 		for file in files_list:
+	# 			if self.file_checker(file) == 1:
+	# 				continue
+	# 			else:
+	# 				self.files_with_maps.append(file)
+
+	# 	if not self.files_with_maps:
+	# 		raise Exception('All files are empty or incorrect!')
+
