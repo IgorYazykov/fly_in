@@ -33,9 +33,35 @@ class Animation():
 	def update_metric(self, width: int, height: int):
 		self.font = pygame.font.SysFont("Arial", int(height * 0.025))
 
-		img_size = int(height * 0.07)
-		if img_size < 32:
-			img_size = 32
+		numb_nodes_row = 0
+		numb_nodes_col = 0
+		x = []
+		y = []
+		if self.node_map_holder.connections[0].hub_s.x not in x:
+			x.append(self.node_map_holder.connections[0].hub_s.x)
+			numb_nodes_row += 1
+		if self.node_map_holder.connections[0].hub_s.y not in y:
+			y.append(self.node_map_holder.connections[0].hub_s.y)
+			numb_nodes_col += 1
+		for conect in self.node_map_holder.connections:
+			if conect.hub_e.x not in x:
+				x.append(conect.hub_e.x)
+				numb_nodes_row += 1
+			if conect.hub_e.y not in y:
+				y.append(conect.hub_s.y)
+				numb_nodes_col += 1
+
+		print(numb_nodes_row, numb_nodes_col)
+
+		border_h = int(height * 0.15)
+		border_w = int(width * 0.12)
+
+		min_margin = int(width * 0.05)
+
+		size_node_w = int((width - (border_w * 2 + min_margin * (numb_nodes_row - 1))) / numb_nodes_row)
+		size_node_h = int((height - (border_h * 2 + min_margin * (numb_nodes_row - 1))) / numb_nodes_col)
+		
+		img_size = int((size_node_h + size_node_w) / 2)
 
 		# Calculating of size for current window size
 		self.img_start = pygame.transform.scale(self.img_start, (img_size, img_size))
@@ -45,54 +71,8 @@ class Animation():
 		self.img_hub_prior = pygame.transform.scale(self.img_hub_prior, (img_size, img_size))
 		self.img_hub_block = pygame.transform.scale(self.img_hub_block, (img_size, img_size))
 
-		xs = [node.x for node in self.node_map]
-		xy = [node.y for node in self.node_map]
-		min_x, min_y = min(xs), min(xy)
-		max_x, max_y = max(xs), max(xy)
-
-		range_x = max_x - min_x if max_x != min_x else 1
-		range_y = max_y - min_y if max_y != min_y else 1
-
-		padding_x = int(width * 0.15)
-		padding_y = int(height * 0.2)
-		draw_width = width - (padding_x * 2)
-		draw_height = height - (padding_y * 2)
-
-		for node in self.node_map:
-			screen_x = padding_x + int(((node.x - min_x) / range_x) * draw_width)
-			if max_y == min_y:
-				screen_y = height // 2
-			else:
-				screen_y = padding_y = padding_y + int(((node.y - min_y) / range_y) * draw_height)
-
-			node.x, node.y = screen_x, screen_y
-
+		
+	
 	def draw_menu(self, surface: pygame.Surface):
-		surface.fill((15, 15, 15))
-
-		for conn in self.node_map_holder.connections:
-			pygame.draw.line(surface, (100, 110, 130), (conn.hub_s.x, conn.hub_s.y), (conn.hub_e.x, conn.hub_e.y), width = 4)
-
-		for node in self.node_map:
-			print(node)
-			if node == self.node_map_holder.start:
-				current_img = self.img_start
-			elif node == self.node_map_holder.end:
-				current_img = self.img_end
-			elif node.zone == ZoneType.NORMAL or node.zone == None:
-				current_img = self.img_hub_norm
-			elif node.zone == ZoneType.BLOCKED:
-				current_img = self.img_hub_block
-			elif node.zone == ZoneType.PRIORITY:
-				current_img = self.img_hub_prior
-			elif node.zone == ZoneType.RESTRICTED:
-				current_img = self.img_hub_rest
-
-			img_rect = current_img.get_rect(center=(node.x, node.y))
-
-			surface.blit(current_img, img_rect)
-
-			text_surf = self.font.render(node.name, True, (240, 240, 250))
-			text_rect = text_surf.get_rect(center = (node.x, img_rect.top - 10))
-			surface.blit(text_surf, text_rect)
+		pass
 
