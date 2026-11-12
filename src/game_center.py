@@ -25,7 +25,7 @@ class GameCenter():
 		if isinstance(self.current_scene, MenuGeneral):
 			self.current_scene.update_metric(self.width, self.height)
 		elif isinstance(self.current_scene, Animation): 
-			pass
+			self.current_scene.update_metric(self.width, self.height)
 
 	def change_scene(self, target_scene: str, data: Any = None):
 		if data == None:

@@ -27,6 +27,11 @@ class ColorType(StrEnum):
 	BROWN = "brown"
 	CYAN = "cyan"
 	MAGENTA = "magenta"
+	MAROON = "maroon"
+	GOLD = "gold"
+	DARKRED = "darkred"
+	VIOLET = "violet"
+	CRIMSON = "crimson"
 
 
 class Node(BaseModel):
@@ -34,6 +39,10 @@ class Node(BaseModel):
 	name: str = Field(default="")
 	x: int = Field(default=0)
 	y: int = Field(default=0)
+	rel_x: int = Field(default=0)
+	rel_y: int = Field(default=0)
+	center_x: int = Field(default=0)
+	center_y: int = Field(default=0)
 	color: ColorType = Field(default="white")
 	zone: ZoneType | None = None
 	max_drones: int = Field(default=1, gt=0)
