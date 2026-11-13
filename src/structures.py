@@ -32,6 +32,8 @@ class ColorType(StrEnum):
 	DARKRED = "darkred"
 	VIOLET = "violet"
 	CRIMSON = "crimson"
+	LIME = "lime"
+	RAINBOW = "rainbow"
 
 
 class Node(BaseModel):

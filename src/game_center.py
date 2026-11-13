@@ -18,6 +18,7 @@ class GameCenter():
 		self.parser = Parser()
 		self.current_scene: MenuDirectori | MenuTXT | Animation = self.scenes["menu_dir"]()
 		self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
+		self.cur_dir: Any = None
 
 	def chenge_of_window(self, x: int, y: int):
 		self.width = x
@@ -43,9 +44,9 @@ class GameCenter():
 
 	def game_click_handeler(self, mouse_pos: tuple[int, int]):
 		if isinstance(self.current_scene, MenuDirectori):
-			res = self.current_scene.handle_click(mouse_pos)
-			if res != None:
-				self.change_scene('menu_txt', res)
+			self.cur_dir = self.current_scene.handle_click(mouse_pos)
+			if self.cur_dir != None:
+				self.change_scene('menu_txt', self.cur_dir)
 				self.current_scene.take_data()
 				self.current_scene.update_metric(self.width, self.height)
 		elif isinstance(self.current_scene, MenuTXT):
@@ -90,6 +91,11 @@ class GameCenter():
 					if (isinstance(self.current_scene, MenuTXT)
 					    and event.button == 5):
 						self.current_scene.handle_scroll_down()
+				elif event.type == pygame.KEYDOWN:
+					if event.key == pygame.K_ESCAPE:
+						self.change_scene('menu_txt', self.cur_dir)
+						self.current_scene.take_data()
+						self.current_scene.update_metric(self.width, self.height)
 
 			self.screen.fill((30, 30, 30))
 			self.drawing_handeler(self.screen)
