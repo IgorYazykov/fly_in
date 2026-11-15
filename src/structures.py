@@ -48,7 +48,9 @@ class Node(BaseModel):
 	color: ColorType = Field(default="white")
 	zone: ZoneType | None = None
 	max_drones: int = Field(default=1, gt=0)
-	neigbords: list[str] = Field(default_factory=list)
+	# g_score: float = float('inf')
+	current_cup: int = Field(default=0)
+	# neigbords: list[str] = Field(default_factory=list)
 
 
 class Connection(BaseModel):

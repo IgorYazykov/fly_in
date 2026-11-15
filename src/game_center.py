@@ -61,7 +61,7 @@ class GameCenter():
 				else:
 					node_map = self.parser.get_map()
 					self.change_scene('animation', node_map)
-					if (self.current_scene.init_img() == 1):
+					if (self.current_scene.init_all() == 1):
 						self.current_scene = self.scenes["menu_dir"]()
 					else:
 						self.current_scene.update_metric(self.width, self.height)
@@ -92,7 +92,8 @@ class GameCenter():
 					    and event.button == 5):
 						self.current_scene.handle_scroll_down()
 				elif event.type == pygame.KEYDOWN:
-					if event.key == pygame.K_ESCAPE:
+					if (event.key == pygame.K_ESCAPE
+					    and isinstance(self.current_scene, Animation)):
 						self.change_scene('menu_txt', self.cur_dir)
 						self.current_scene.take_data()
 						self.current_scene.update_metric(self.width, self.height)

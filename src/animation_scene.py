@@ -1,4 +1,5 @@
 from .structures import Nodes_holder, Node, ZoneType
+from .solver import Solver
 import pygame
 
 
@@ -21,8 +22,11 @@ class Animation():
 		self.node_map: list[Node] = []
 		self.font_size: int = 0
 		self.img_size: int = 0
+		self.solver: Solver | None = None
 
-	def init_img(self) -> int:
+	
+
+	def init_all(self) -> int:
 		try:
 			self.img_start_or = pygame.image.load("src/img/start-png-44879.png")
 			self.img_end_or = pygame.image.load("src/img/finished-png-33595.png")
@@ -30,13 +34,20 @@ class Animation():
 			self.img_hub_rest_or = pygame.image.load("src/img/triangle-png-42421.png")
 			self.img_hub_prior_or = pygame.image.load("src/img/circle-png-25307.png")
 			self.img_hub_block_or = pygame.image.load("src/img/image.png")
-			self.node_map = self.node_map_holder.nodes.copy()
-			self.node_map.append(self.node_map_holder.start)
-			self.node_map.append(self.node_map_holder.end)
-			return(0)
 		except pygame.error as err:
 			print(err)
 			return(1)
+		
+		self.node_map = self.node_map_holder.nodes.copy()
+		self.node_map.append(self.node_map_holder.start)
+		self.node_map.append(self.node_map_holder.end)
+		self.solver = Solver(self.node_map,
+								self.node_map_holder.connections,
+								self.node_map_holder.nb_drones,
+								self.node_map_holder.start,
+								self.node_map_holder.end)
+		self.solver.get_shorter_way()
+		return(0)
 		
 	def update_metric(self, width: int, height: int):
 		self.font_size = int(min(height, width) * 0.015)
