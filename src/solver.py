@@ -1,43 +1,6 @@
 from .structures import Node, Connection, ZoneType
+from .my_heap import MyHeap
 import math
-
-
-class MyHeap():
-	def __init__(self):
-		self.elements: list[tuple[float, Node, Node]] = []
-
-	def is_empty(self) -> bool:
-		return len(self.elements) == 0
-
-	def already_in(self, hub: Node) -> bool:
-		for elem in self.elements:
-			if hub == elem[2]:
-				return True
-		return False
-
-	def add_new(self, node: Node, cur_node: Node,cost: float):
-		if not self.already_in(node):
-			self.elements.append((cost, cur_node, node))
-		else:
-			for i in range(len(self.elements)):
-				if self.elements[i][2] == node:
-					if self.elements[i][0] > cost:
-						self.elements[i] = (cost, cur_node, node)
-
-	def take_target(self) -> tuple[Node, Node] | tuple[None, None]:
-		if self.is_empty() == True:
-			return (None, None)
-		
-		min_price = self.elements[0][0]
-		target_ind = 0
-
-		for i in range(len(self.elements)):
-			if min_price > self.elements[i][0]:
-				min_price = self.elements[i][0]
-				target_ind = i
-
-		_, from_node, node = self.elements.pop(target_ind)
-		return (from_node, node)
 
 
 class Solver():
@@ -54,7 +17,7 @@ class Solver():
 		self.end_hub: Node = end
 		self.ways: list[list[Node]] = []
 		self.scheduler: list[list[Node]] = []
-		self.all_ways: list[Connection] = []
+		self.all_ways: list[list[Connection]] = []
 
 	def get_all_neighbors(self, current_hub: Node) -> list[Node] | None:
 		all_neighbors = []
@@ -118,12 +81,27 @@ class Solver():
 			hub.g_score = float('inf')
 		self.start_hub.g_score = 0
 
-	def get_shorter_way(self):
+	def mark_node_in_way(self, way: list[tuple[Node, Node]] | None):
+		if not way:
+			for way in self.all_ways:
+				for step_con in way:
+					step_con.hub_e.checked = True
+					step_con.hub_s.checked = True
+		else:
+			for step in way:
+				step[0].checked = True
+				step[1].checked = True
+
+	def a_star_algoritm(self, part_of_way: list[tuple[Node, Node]] | None, start_node: Node | None) -> list[Connection]:
 		unvisited_ne = MyHeap()
 		not_in_target = True
-		current_nod = self.start_hub
-		current_nod.g_score = 0
 		way = []
+		if start_node == None:
+			current_nod = self.start_hub
+		else:
+			current_nod = start_node
+			way = part_of_way
+		current_nod.g_score = 0
 
 		while not_in_target:
 			all_heighbords = self.get_all_neighbors(current_nod)
@@ -131,12 +109,56 @@ class Solver():
 				self.put_neighbors_to_heap(all_heighbords, unvisited_ne, current_nod)
 			from_node, current_nod = unvisited_ne.take_target()
 			if not current_nod:
-				print("Map hasn`t a solution!")
-				break		
+				self.mark_node_in_way(way)
+				return []	
 			way.append((from_node, current_nod))
 			if current_nod == self.end_hub:
 				not_in_target = False
 
-		self.reconstruct_pas(way)
+		return self.reconstruct_pas(way)
+
+	def check_for_new_heighbords(self) -> list[tuple[Node, Node]] | None:
+		part_way = []
+		self.mark_node_in_way(None)
+
+		for way in self.all_ways:
+			for corect_con in way:
+				for con in self.connections:
+					if (corect_con.hub_s == con.hub_s
+					    and con.hub_e.checked != True):
+						part_way.append((con.hub_s, con.hub_e))
+						return part_way
+				part_way.append((corect_con.hub_s, corect_con.hub_e))
+		return None
 		
+	def yen_algoritm(self) -> list[list[Connection]]:
+		find_way = self.a_star_algoritm(None, None)
+		if not find_way:
+			print("Map hasn`t a solution!")
+			return []
+
+		for con in find_way:
+			print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
+		print("---------------")
+
+		self.all_ways.append(find_way)
+		
+		for _ in range(10):
+			self.clear_scores()
+			part_way = self.check_for_new_heighbords()
+			if part_way == None:
+				break
+			posible_pass = self.a_star_algoritm(part_way, part_way[-1][1])
+			if not posible_pass:
+				continue
+			for con in posible_pass:
+				print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
+			print("---------------")
+			self.all_ways.append(posible_pass)
+
+		# for way in self.all_ways:
+			# for con in way:
+			# 	print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.name} -> {con.hub_e.name}")
+			# print("---------------")
+
 

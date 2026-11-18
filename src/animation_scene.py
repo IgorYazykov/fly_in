@@ -46,7 +46,7 @@ class Animation():
 								self.node_map_holder.nb_drones,
 								self.node_map_holder.start,
 								self.node_map_holder.end)
-		self.solver.get_shorter_way()
+		self.solver.yen_algoritm()
 		return(0)
 		
 	def update_metric(self, width: int, height: int):
