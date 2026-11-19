@@ -17,7 +17,7 @@ class Solver():
 		self.end_hub: Node = end
 		self.ways: list[list[Node]] = []
 		self.scheduler: list[list[Node]] = []
-		self.all_ways: list[list[Connection]] = []
+		self.all_ways: list[tuple[list[Connection], float]] = []
 
 	def get_all_neighbors(self, current_hub: Node) -> list[Node] | None:
 		all_neighbors = []
@@ -84,7 +84,7 @@ class Solver():
 	def mark_node_in_way(self, way: list[tuple[Node, Node]] | None):
 		if not way:
 			for way in self.all_ways:
-				for step_con in way:
+				for step_con in way[0]:
 					step_con.hub_e.checked = True
 					step_con.hub_s.checked = True
 		else:
@@ -122,7 +122,7 @@ class Solver():
 		self.mark_node_in_way(None)
 
 		for way in self.all_ways:
-			for corect_con in way:
+			for corect_con in way[0]:
 				for con in self.connections:
 					if (corect_con.hub_s == con.hub_s
 					    and con.hub_e.checked != True):
@@ -130,18 +130,39 @@ class Solver():
 						return part_way
 				part_way.append((corect_con.hub_s, corect_con.hub_e))
 		return None
+
+	def calculate_g_score(self) -> list[tuple[Connection, float]]:
+		updated_ways = []
+		for way in self.all_ways:
+			self.clear_scores()
+			way[0][0].hub_s.g_score = 0
+			for con in way[0]:
+				price = self.get_price_of_zones(con.hub_e)
+				new_g = con.hub_s.g_score + price
+				con.hub_e.g_score = new_g
+			final_price = way[0][-1].hub_e.g_score
+			updated_ways.append((way[0], final_price))
 		
-	def yen_algoritm(self) -> list[list[Connection]]:
+		for way in updated_ways:
+			for con in way[0]:
+				print(f"{con.hub_s.name} -> {con.hub_e.name}")
+			print(f"{way[1]}")
+			print("---------------")
+
+		return updated_ways
+			
+		
+	def yen_algoritm(self) -> list[tuple[Connection, float]]:
 		find_way = self.a_star_algoritm(None, None)
 		if not find_way:
 			print("Map hasn`t a solution!")
 			return []
 
-		for con in find_way:
-			print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
-		print("---------------")
+		# for con in find_way:
+		# 	print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
+		# print("---------------")
 
-		self.all_ways.append(find_way)
+		self.all_ways.append((find_way, 0))
 		
 		for _ in range(10):
 			self.clear_scores()
@@ -151,14 +172,21 @@ class Solver():
 			posible_pass = self.a_star_algoritm(part_way, part_way[-1][1])
 			if not posible_pass:
 				continue
-			for con in posible_pass:
-				print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
-			print("---------------")
-			self.all_ways.append(posible_pass)
+			# for con in posible_pass:
+			# 	print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
+			# print("---------------")
+			self.all_ways.append((posible_pass, 0))
+
+		return self.calculate_g_score()
 
 		# for way in self.all_ways:
-			# for con in way:
-			# 	print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.name} -> {con.hub_e.name}")
-			# print("---------------")
+		# 	for con in way[0]:
+		# 		print(f"{con.hub_s.name} -> {con.hub_e.name} / {con.hub_s.g_score} -> {con.hub_e.g_score}")
+		# 	print("---------------")
+		# for way in self.all_ways:
+		# 	for con in way[0]:
+		# 		print(f"{con.hub_s.name} -> {con.hub_e.name}")
+		# 	print(f"{way[1]}")
+		# 	print("---------------")
 
 

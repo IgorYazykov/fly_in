@@ -14,7 +14,7 @@ class MyHeap():
 				return True
 		return False
 
-	def add_new(self, node: Node, cur_node: Node,cost: float):
+	def add_new(self, node: Node, cur_node: Node, cost: float):
 		if not self.already_in(node):
 			self.elements.append((cost, cur_node, node))
 		else:
