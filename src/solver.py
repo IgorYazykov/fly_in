@@ -131,7 +131,7 @@ class Solver():
 				part_way.append((corect_con.hub_s, corect_con.hub_e))
 		return None
 
-	def calculate_g_score(self) -> list[tuple[Connection, float]]:
+	def calculate_g_score(self) -> list[tuple[list[Connection], float]]:
 		updated_ways = []
 		for way in self.all_ways:
 			self.clear_scores()
@@ -143,16 +143,16 @@ class Solver():
 			final_price = way[0][-1].hub_e.g_score
 			updated_ways.append((way[0], final_price))
 		
-		for way in updated_ways:
-			for con in way[0]:
-				print(f"{con.hub_s.name} -> {con.hub_e.name}")
-			print(f"{way[1]}")
-			print("---------------")
+		# for way in updated_ways:
+		# 	for con in way[0]:
+		# 		print(f"{con.hub_s.name} -> {con.hub_e.name}")
+		# 	print(f"{way[1]}")
+		# 	print("---------------")
 
 		return updated_ways
 			
 		
-	def yen_algoritm(self) -> list[tuple[Connection, float]]:
+	def yen_algoritm(self) -> list[tuple[list[Connection], float]]:
 		find_way = self.a_star_algoritm(None, None)
 		if not find_way:
 			print("Map hasn`t a solution!")

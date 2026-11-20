@@ -71,6 +71,16 @@ class Nodes_holder(BaseModel):
 	connections: list[Connection] = Field(default_factory=list)
 
 
+class Drone:
+	__slots__ = ("x", "y", "finished", "position")
+
+	def __init__(self, x: int, y: int):
+		self.x: int = x
+		self.y: int = y
+		self.finished: bool = False
+		self.position: list[Node | Connection] | None = None
+
+
 class MenuGeneral(ABC):
 	def __init__(self):
 		self.fileOperator = FileHandeler()

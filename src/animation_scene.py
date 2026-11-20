@@ -1,32 +1,32 @@
 from .structures import Nodes_holder, Node, ZoneType
-from .solver import Solver
 import pygame
 
 
 class Animation():
 	def __init__(self, node_map):
 		self.node_map_holder: Nodes_holder = node_map
+
 		self.img_start_or: pygame.Surface | None = None
 		self.img_end_or: pygame.Surface | None = None
 		self.img_hub_norm_or: pygame.Surface | None = None
 		self.img_hub_rest_or: pygame.Surface | None = None
 		self.img_hub_prior_or: pygame.Surface | None = None
 		self.img_hub_block_or: pygame.Surface | None = None
+
 		self.img_start: pygame.Surface | None = None
 		self.img_end: pygame.Surface | None = None
 		self.img_hub_norm: pygame.Surface | None = None
 		self.img_hub_rest: pygame.Surface | None = None
 		self.img_hub_prior: pygame.Surface | None = None
 		self.img_hub_block: pygame.Surface | None = None
+
 		self.font = None
 		self.node_map: list[Node] = []
 		self.font_size: int = 0
 		self.img_size: int = 0
-		self.solver: Solver | None = None
-
 	
 
-	def init_all(self) -> int:
+	def init_all(self) -> list[Node] | int:
 		try:
 			self.img_start_or = pygame.image.load("src/img/start-png-44879.png")
 			self.img_end_or = pygame.image.load("src/img/finished-png-33595.png")
@@ -37,17 +37,14 @@ class Animation():
 		except pygame.error as err:
 			print(err)
 			return(1)
+		except FileNotFoundError as err:
+			print(err)
+			return(1)
 		
 		self.node_map = self.node_map_holder.nodes.copy()
 		self.node_map.append(self.node_map_holder.start)
 		self.node_map.append(self.node_map_holder.end)
-		self.solver = Solver(self.node_map,
-								self.node_map_holder.connections,
-								self.node_map_holder.nb_drones,
-								self.node_map_holder.start,
-								self.node_map_holder.end)
-		self.solver.yen_algoritm()
-		return(0)
+		return self.node_map
 		
 	def update_metric(self, width: int, height: int):
 		self.font_size = int(min(height, width) * 0.015)

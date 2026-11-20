@@ -3,7 +3,9 @@ from typing import Any
 from .menu_scenes import MenuGeneral, MenuDirectori, MenuTXT
 from .animation_scene import Animation
 from .parser import Parser
-from .structures import Nodes_holder
+from .structures import Nodes_holder, Connection
+from .schedule_drones import Schedule_drones
+from .solver import Solver
 
 
 class GameCenter():
@@ -19,6 +21,9 @@ class GameCenter():
 		self.current_scene: MenuDirectori | MenuTXT | Animation = self.scenes["menu_dir"]()
 		self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
 		self.cur_dir: Any = None
+		self.solver: Solver | None = None
+		self.ways: list[tuple[list[Connection], float]] = []
+		self.schedule_handeler: Schedule_drones | None = None
 
 	def chenge_of_window(self, x: int, y: int):
 		self.width = x
@@ -61,10 +66,30 @@ class GameCenter():
 				else:
 					node_map = self.parser.get_map()
 					self.change_scene('animation', node_map)
-					if (self.current_scene.init_all() == 1):
-						self.current_scene = self.scenes["menu_dir"]()
+					all_nodes = self.current_scene.init_all()
+					if (all_nodes == 1):
+						self.change_scene('menu_txt', self.cur_dir)
+						self.current_scene.take_data()
+						self.current_scene.update_metric(self.width, self.height)
 					else:
 						self.current_scene.update_metric(self.width, self.height)
+						self.solver = Solver(all_nodes,
+											 node_map.connections,
+											 node_map.nb_drones,
+											 node_map.start,
+											 node_map.end)
+						
+						self.ways = self.solver.yen_algoritm()
+
+						if not self.ways:
+							self.change_scene('menu_txt', self.cur_dir)
+							self.current_scene.take_data()
+							self.current_scene.update_metric(self.width, self.height)
+
+						self.schedule_handeler(self.ways, node_map.nb_drones)
+
+						
+
 
 	def main_loop(self):
 		pygame.init()
