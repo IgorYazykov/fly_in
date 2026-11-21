@@ -89,10 +89,12 @@ class Parser(BaseModel):
 				return (1)
 
 		if type_hub == 'start_hub':
+			new_node.max_drones = self.tmp_map.nb_drones
 			self.tmp_map.start = new_node
 		if type_hub == 'hub':
 			self.tmp_map.nodes.append(new_node)
 		if type_hub == 'end_hub':
+			new_node.max_drones = self.tmp_map.nb_drones
 			self.tmp_map.end = new_node
 		return (0)
 

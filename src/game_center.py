@@ -86,7 +86,11 @@ class GameCenter():
 							self.current_scene.take_data()
 							self.current_scene.update_metric(self.width, self.height)
 
-						self.schedule_handeler(self.ways, node_map.nb_drones)
+						self.schedule_handeler = Schedule_drones(self.ways,
+																 node_map.nb_drones,
+																 node_map.start,
+																 node_map.end)
+						self.schedule_handeler.make_schedule()
 
 						
 

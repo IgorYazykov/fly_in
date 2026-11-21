@@ -50,7 +50,7 @@ class Node(BaseModel):
 	max_drones: int = Field(default=1, gt=0)
 	g_score: float = float('inf')
 	checked: bool = False
-	current_cup: int = Field(default=0)
+	schedule: list[tuple[int, int]] = Field(default_factory=list)
 	# neigbords: list[str] = Field(default_factory=list)
 
 
@@ -59,6 +59,7 @@ class Connection(BaseModel):
 	hub_s: Node = Field(default_factory=Node)
 	hub_e: Node = Field(default_factory=Node)
 	max_link_capacity: int | None = Field(default=None, gt=0)
+	schedule: list[tuple[int, int]] = Field(default_factory=list)
 
 
 class Nodes_holder(BaseModel):
@@ -72,13 +73,14 @@ class Nodes_holder(BaseModel):
 
 
 class Drone:
-	__slots__ = ("x", "y", "finished", "position")
+	__slots__ = ("id", "x", "y", "finished", "position")
 
-	def __init__(self, x: int, y: int):
+	def __init__(self, id: int, x: int, y: int, finished: bool, position: list[Node]):
+		self.id: int = id
 		self.x: int = x
 		self.y: int = y
-		self.finished: bool = False
-		self.position: list[Node | Connection] | None = None
+		self.finished: bool = finished
+		self.position: list[Node | Connection] = position
 
 
 class MenuGeneral(ABC):
