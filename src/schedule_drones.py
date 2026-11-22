@@ -12,7 +12,8 @@ class Schedule_drones():
 		self.drones: list[Drone] = []
 		self.history: list[str] = []
 		self.counter_steps: int = 0
-		self.number_of_choice = 0
+		self.number_of_choice: int = 0
+		self.curent_elem: int = 0
 
 	def get_price(self, hub: Node) -> int:
 		if hub.zone == ZoneType.PRIORITY:
@@ -39,89 +40,97 @@ class Schedule_drones():
 	def sorting_ways_by_price(self) -> None:
 		self.all_ways.sort(key=lambda x: x[1])
 
-	def check_node(self, drone: Drone, node: Node) -> bool:
+	def check_node(self, drone: Drone, node: Node, shift: int) -> bool:
 		cur_cup = 0
 		for elem in node.schedule:
-			if elem[0] == len(drone.position):
+			if elem[0] == (len(drone.position) + shift):
 				cur_cup += 1
 		if cur_cup < node.max_drones:
-			# print(f"go to node {node.name}")
 			return True
 		return False
-		
 
-	def try_to_take_connection(self, con: Connection, cur_step: int) -> bool:
-		if con.max_link_capacity == None:
-			return False
+	def try_to_take_connection(self, con: Connection, drone: Drone) -> bool:
 		if not con.schedule:
-			# print(f"got to connection {con.hub_s.name}-{con.hub_e.name}")
 			return True
 		else:
-			cur_cup = sum(1 for step, _ in con.schedule if step == cur_step)
+			cur_cup = 0
+			for step, _ in con.schedule:
+				if step == (len(drone.position)):
+					cur_cup += 1
 			if cur_cup == con.max_link_capacity:
 				return False
-			# print(f"got to connection {con.hub_s.name}-{con.hub_e.name}")
 			return True
 
-	def wait_turn(self, curent_elem: int, drone: Drone) -> None:
-		drone.position.append(drone.position[curent_elem - 1])
-		drone.position[curent_elem - 1].schedule.append((len(drone.position), drone.id))
+	def wait_turn(self, drone: Drone) -> None:
+		leng_of_way = len(drone.position)
+		drone.position.append(drone.position[leng_of_way - 1])
+		drone.position[leng_of_way - 1].schedule.append((leng_of_way, drone.id))
 
 
-	def check_nod_in_ways(self, cur_price: float, cur_con: Connection) -> int:
+	def check_nod_in_ways(self, cur_price: float, cur_con: Connection, drone: Drone) -> int:
 		variants = []
 		for i in range(len(self.all_ways)):
 			if i != self.number_of_choice:
 				for con in self.all_ways[i][0]:
 					if (con.hub_s == cur_con.hub_s
 					    and con.hub_e != cur_con.hub_e
+					    and self.try_to_take_connection(con, drone)
 						and self.all_ways[i][1] < (cur_price + 3)):
-						variants.append((self.all_ways[i][1], i))
+						res = False
+						if (con.hub_e.zone == ZoneType.RESTRICTED):
+							res = (self.check_node(drone, con.hub_e, 1)	
+							       and self.try_to_take_connection(con, drone))
+						else:
+							res = self.check_node(drone, con.hub_e, 0)
+
+						if res:
+							variants.append((self.all_ways[i][1], i))
 
 		if not variants:
 			return -1
 
 		variants.sort(key=lambda x: x[0])
+		target_conections = self.all_ways[variants[0][1]][0]
+		for i in range(len(target_conections)):
+			if cur_con.hub_s == target_conections[i].hub_s:
+				self.curent_elem = i
+				break
 
 		return variants[0][1]
 
 	def take_decision(self,
 	                  active_choice: tuple[list[Connection], float],
-					  curent_elem: int,
 					  drone: Drone) -> int:
-		target = self.check_nod_in_ways(active_choice[1], active_choice[0][curent_elem])
+		target = self.check_nod_in_ways(active_choice[1], active_choice[0][self.curent_elem], drone)
 		if target == -1:
-			# stay on current hub
-			# print(f"dron wait in{drone.position[curent_elem]}")
-			self.wait_turn(len(drone.position), drone)
+			self.wait_turn(drone)
 			return 0
-		# print("switch way")
 		self.number_of_choice = target
 		return 0
 
 	def try_to_make_step(self,
 	                     active_choice: tuple[list[Connection], float],
-						 curent_elem: int,
 						 drone: Drone) -> int:
-		# print(curent_elem)
-		# print(len(active_choice[0]))
-		if not active_choice[0][curent_elem].hub_e.schedule:
-			active_choice[0][curent_elem].hub_e.schedule.append((len(drone.position), drone.id))
-			drone.position.append(active_choice[0][curent_elem].hub_e)
-			return 1
-		else:
-			# print("not easy way")
-			if self.check_node(drone, active_choice[0][curent_elem].hub_e):
-				active_choice[0][curent_elem].hub_e.schedule.append((len(drone.position), drone.id))
-				drone.position.append(active_choice[0][curent_elem].hub_e)
+
+		leng_of_way = len(drone.position)
+
+		if (active_choice[0][self.curent_elem].hub_e.zone != ZoneType.RESTRICTED
+		    and self.check_node(drone, active_choice[0][self.curent_elem].hub_e, 0)
+			and self.try_to_take_connection(active_choice[0][self.curent_elem], drone)):
+				active_choice[0][self.curent_elem].hub_e.schedule.append((leng_of_way, drone.id))
+				active_choice[0][self.curent_elem].schedule.append((leng_of_way, drone.id))
+				drone.position.append(active_choice[0][self.curent_elem].hub_e)
 				return 1
-			else:
-				if self.try_to_take_connection(active_choice[0][curent_elem], curent_elem):
-					active_choice[0][curent_elem].schedule.append((len(drone.position), drone.id))
-					drone.position.append(active_choice[0][curent_elem])
-					return 0
-				else:
-					return self.take_decision(active_choice,  curent_elem, drone)
+		elif (active_choice[0][self.curent_elem].hub_e.zone == ZoneType.RESTRICTED
+		      and self.check_node(drone, active_choice[0][self.curent_elem].hub_e, 1)
+			  and self.try_to_take_connection(active_choice[0][self.curent_elem], drone)):
+				active_choice[0][self.curent_elem].hub_e.schedule.append((leng_of_way + 1, drone.id))
+				active_choice[0][self.curent_elem].schedule.append((leng_of_way, drone.id))
+				drone.position.append(active_choice[0][self.curent_elem])
+				drone.position.append(active_choice[0][self.curent_elem].hub_e)
+				return 1
+		else:
+			return self.take_decision(active_choice, drone)
 
 	def make_it_same_leng(self) -> None:
 		max_leng = 0
@@ -142,14 +151,15 @@ class Schedule_drones():
 		self.sorting_ways_by_price()
 
 		for drone in self.drones:
-			curent_elem = 0
+			self.curent_elem = 0
 			self.number_of_choice = 0
-			while not drone.finished and curent_elem < 50:
+			while not drone.finished and len(drone.position) < 100:
 				active_choice = self.all_ways[self.number_of_choice]
-				curent_elem += self.try_to_make_step(active_choice, curent_elem, drone)
-				if (isinstance(drone.position[curent_elem], Node)
-				    and drone.position[(len(drone.position) - 1)] == self.end):
-					drone.finished = True
+				self.curent_elem += self.try_to_make_step(active_choice, drone)
+				leng_of_way = len(drone.position)
+				if (isinstance(drone.position[leng_of_way - 1], Node)):
+					if drone.position[(leng_of_way - 1)] == self.end:
+						drone.finished = True
 
 		self.make_it_same_leng()
 

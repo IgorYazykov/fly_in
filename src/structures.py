@@ -58,7 +58,7 @@ class Connection(BaseModel):
 	model_config = ConfigDict(validate_assignment=True)
 	hub_s: Node = Field(default_factory=Node)
 	hub_e: Node = Field(default_factory=Node)
-	max_link_capacity: int | None = Field(default=None, gt=0)
+	max_link_capacity: int = Field(default=1, gt=0)
 	schedule: list[tuple[int, int]] = Field(default_factory=list)
 
 
