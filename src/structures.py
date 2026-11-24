@@ -50,8 +50,8 @@ class Node(BaseModel):
 	max_drones: int = Field(default=1, gt=0)
 	g_score: float = float('inf')
 	checked: bool = False
+	# Elements in tuple mean a number of step and id of the drone
 	schedule: list[tuple[int, int]] = Field(default_factory=list)
-	# neigbords: list[str] = Field(default_factory=list)
 
 
 class Connection(BaseModel):
@@ -59,6 +59,7 @@ class Connection(BaseModel):
 	hub_s: Node = Field(default_factory=Node)
 	hub_e: Node = Field(default_factory=Node)
 	max_link_capacity: int = Field(default=1, gt=0)
+	# Elements in tuple mean a number of step and id of the drone
 	schedule: list[tuple[int, int]] = Field(default_factory=list)
 
 

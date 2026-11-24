@@ -1,5 +1,4 @@
 from .structures import Connection, Drone, Node, ZoneType
-from functools import reduce
 import pygame
 
 

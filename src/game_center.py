@@ -4,7 +4,7 @@ from .menu_scenes import MenuGeneral, MenuDirectori, MenuTXT
 from .animation_scene import Animation
 from .parser import Parser
 from .structures import Nodes_holder, Connection
-from .schedule_drones import Schedule_drones
+from .new_schedule_drones import Schedule_drones
 from .solver import Solver
 
 
