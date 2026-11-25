@@ -43,6 +43,7 @@ class Node(BaseModel):
 	y: int = Field(default=0)
 	rel_x: int = Field(default=0)
 	rel_y: int = Field(default=0)
+	size: int = 0
 	center_x: int = Field(default=0)
 	center_y: int = Field(default=0)
 	color: ColorType = Field(default="white")
@@ -73,15 +74,15 @@ class Nodes_holder(BaseModel):
 	connections: list[Connection] = Field(default_factory=list)
 
 
-class Drone:
-	__slots__ = ("id", "x", "y", "finished", "position")
+# class Drone:
+# 	__slots__ = ("id", "x", "y", "finished", "position")
 
-	def __init__(self, id: int, x: int, y: int, finished: bool, position: list[Node]):
-		self.id: int = id
-		self.x: int = x
-		self.y: int = y
-		self.finished: bool = finished
-		self.position: list[Node | Connection] = position
+# 	def __init__(self, id: int, x: int, y: int, finished: bool, position: list[Node]):
+# 		self.id: int = id
+# 		self.x: int = x
+# 		self.y: int = y
+# 		self.finished: bool = finished
+# 		self.position: list[Node | Connection] = position
 
 
 class MenuGeneral(ABC):

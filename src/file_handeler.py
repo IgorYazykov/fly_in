@@ -11,7 +11,7 @@ class FileHandeler():
 		self.names_maps: list[str] = []
 
 	def dir_finder(self):
-		levels = Path('maps')
+		levels = Path('maps_test')
 		if not levels.is_dir():
 			raise Exception('Directory "maps" is not exist!')
 

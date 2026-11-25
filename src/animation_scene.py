@@ -90,6 +90,7 @@ class Animation():
 
 			node.center_x = start_screen_x + (self.img_size // 2)
 			node.center_y = start_screen_y + (self.img_size // 2)
+			node.size = self.img_size
 		
 	def draw_menu(self, surface: pygame.Surface):
 		surface.fill("teal")

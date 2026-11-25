@@ -4,8 +4,9 @@ from .menu_scenes import MenuGeneral, MenuDirectori, MenuTXT
 from .animation_scene import Animation
 from .parser import Parser
 from .structures import Nodes_holder, Connection
-from .new_schedule_drones import Schedule_drones
+from .schedule_drones import Schedule_drones
 from .solver import Solver
+from .animate_drones import Animate_drones
 
 
 class GameCenter():
@@ -24,6 +25,8 @@ class GameCenter():
 		self.solver: Solver | None = None
 		self.ways: list[tuple[list[Connection], float]] = []
 		self.schedule_handeler: Schedule_drones | None = None
+		self.drone_handeler: Animate_drones | None = None
+		self.draw_drones: bool = False
 
 	def chenge_of_window(self, x: int, y: int):
 		self.width = x
@@ -32,6 +35,8 @@ class GameCenter():
 			self.current_scene.update_metric(self.width, self.height)
 		elif isinstance(self.current_scene, Animation): 
 			self.current_scene.update_metric(self.width, self.height)
+			if self.draw_drones:
+				self.drone_handeler.update_metric_for_all_drones(self.width, self.height, False)
 
 	def change_scene(self, target_scene: str, data: Any = None):
 		if data == None:
@@ -46,6 +51,8 @@ class GameCenter():
 			self.current_scene.draw_menu(surface)
 		if isinstance(self.current_scene, Animation):
 			self.current_scene.draw_menu(surface)
+			if self.draw_drones:
+				self.drone_handeler.draw_drones(surface)
 
 	def game_click_handeler(self, mouse_pos: tuple[int, int]):
 		if isinstance(self.current_scene, MenuDirectori):
@@ -91,7 +98,14 @@ class GameCenter():
 																 node_map.start,
 																 node_map.end)
 						self.schedule_handeler.make_schedule()
+						schedule = self.schedule_handeler.take_schedule()
 
+						self.drone_handeler = Animate_drones(schedule,
+															 node_map.nb_drones,
+															 node_map.start,
+															 node_map.end)
+						if self.drone_handeler.start_animation(self.width, self.height) == 0:
+							self.draw_drones = True
 						
 
 
