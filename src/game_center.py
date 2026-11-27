@@ -27,6 +27,7 @@ class GameCenter():
 		self.schedule_handeler: Schedule_drones | None = None
 		self.drone_handeler: Animate_drones | None = None
 		self.draw_drones: bool = False
+		self.step: int = 1
 
 	def chenge_of_window(self, x: int, y: int):
 		self.width = x
@@ -36,7 +37,7 @@ class GameCenter():
 		elif isinstance(self.current_scene, Animation): 
 			self.current_scene.update_metric(self.width, self.height)
 			if self.draw_drones:
-				self.drone_handeler.update_metric_for_all_drones(self.width, self.height, False)
+				self.drone_handeler.update_metric_for_all_drones(self.width, self.height)
 
 	def change_scene(self, target_scene: str, data: Any = None):
 		if data == None:
@@ -54,7 +55,7 @@ class GameCenter():
 			if self.draw_drones:
 				self.drone_handeler.draw_drones(surface)
 
-	def game_click_handeler(self, mouse_pos: tuple[int, int]):
+	def game_click_handeler(self, mouse_pos: tuple[int, int], dt: Any):
 		if isinstance(self.current_scene, MenuDirectori):
 			self.cur_dir = self.current_scene.handle_click(mouse_pos)
 			if self.cur_dir != None:
@@ -104,10 +105,10 @@ class GameCenter():
 															 node_map.nb_drones,
 															 node_map.start,
 															 node_map.end)
-						if self.drone_handeler.start_animation(self.width, self.height) == 0:
+						self.drone_handeler.find_final_step()
+						res_init = self.drone_handeler.drones_handeler(self.width, self.height, self.step, dt)
+						if res_init != -1:
 							self.draw_drones = True
-						
-
 
 	def main_loop(self):
 		pygame.init()
@@ -119,7 +120,7 @@ class GameCenter():
 		sys_window.minimum_size = (900, 600)
 	
 		while running:
-			clock.tick(60)
+			dt = clock.tick(60) / 1000.0
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					running = False
@@ -127,7 +128,7 @@ class GameCenter():
 					self.chenge_of_window(event.x, event.y)
 				elif event.type == pygame.MOUSEBUTTONDOWN:
 					if event.button == 1:
-						self.game_click_handeler(event.pos)
+						self.game_click_handeler(event.pos, dt)
 					if (isinstance(self.current_scene, MenuTXT)
 					    and event.button == 4):
 						self.current_scene.handle_scroll_up()
@@ -137,10 +138,22 @@ class GameCenter():
 				elif event.type == pygame.KEYDOWN:
 					if (event.key == pygame.K_ESCAPE
 					    and isinstance(self.current_scene, Animation)):
+						self.draw_drones = False
+						self.step = 1
 						self.change_scene('menu_txt', self.cur_dir)
 						self.current_scene.take_data()
 						self.current_scene.update_metric(self.width, self.height)
-
+			if self.draw_drones:
+				cur_res = self.drone_handeler.drones_handeler(self.width, self.height, self.step, dt)
+				# print(cur_res)
+				if cur_res == -1:
+					self.draw_drones = False
+					self.step = 1
+					self.change_scene('menu_txt', self.cur_dir)
+					self.current_scene.take_data()
+					self.current_scene.update_metric(self.width, self.height)
+				else:
+					self.step += cur_res
 			self.screen.fill((30, 30, 30))
 			self.drawing_handeler(self.screen)
 			pygame.display.flip()

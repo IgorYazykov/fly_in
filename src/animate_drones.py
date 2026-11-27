@@ -1,5 +1,6 @@
 from .structures import Connection, Node
 from .drone import Drone
+from typing import Any
 import pygame
 
 
@@ -7,7 +8,7 @@ class Animate_drones():
 	def __init__(self, schedule: list[list[tuple[Node | Connection, int]]], nb_drones: int, start: Node, end: Node):
 		self.schedule: list[list[tuple[Node | Connection, int]]] = schedule
 		self.nb_drones: int = nb_drones
-		self.step: int = 1
+		# self.step: int = 1
 		self.all_drones: list[Drone] = []
 		self.start: Node = start
 		self.end: Node = end
@@ -16,10 +17,13 @@ class Animate_drones():
 
 	def update_metric_for_all_drones(self, width: int, height: int) -> None:
 		for drone in self.all_drones:
-			drone.update_metric(width, height, True)
+			drone.update_metric(width, height)
 
 	def create_new_drone(self) -> int:
-		new_drone = Drone(self.counter_id, self.start.center_x, self.start.center_y, False, [self.start])
+		new_drone = Drone(self.counter_id,
+		                  self.start.center_x,
+						  self.start.center_y,
+						  self.start)
 		if new_drone.init_all() == 1:
 			return 1
 		self.all_drones.append(new_drone)
@@ -30,7 +34,7 @@ class Animate_drones():
 		if not self.all_drones:
 			return
 		for drone in self.all_drones:
-			if drone.finished:
+			if drone.position == self.end:
 				print(f"remove drone {drone.id}")
 				self.all_drones.remove(drone)
 
@@ -39,35 +43,39 @@ class Animate_drones():
 			drone.draw(surface)
 
 	def find_final_step(self) -> None:
+		print(self.schedule)
 		for way in self.schedule:
 			for item in way:
 				if item[1] > self.final_step:
 					self.final_step = item[1]
 
-	def start_animation(self, width: int, height: int) -> int:
-		self.find_final_step()
+	def take_targets(self, id, step) -> Node | Connection | None:
+		for target, target_step in self.schedule[id]:
+			if target_step == step:
+				return target
+		return None
 
-		while self.step <= self.final_step:
-			for i in range(self.nb_drones):
-				for item in self.schedule[i]:
-				# create drone when curent step eqval first step of this drone in schedule
-					if (self.counter_id == i
-						and self.step == item[1]):
-						if self.create_new_drone() == 1:
-							return 1
-						self.update_metric_for_all_drones(width, height)
+	def drones_handeler(self, width: int, height: int, step: int, dt: Any) -> int:
+		for id in range(self.counter_id, self.nb_drones):
+			if self.take_targets(id, step) != None:
+				if self.create_new_drone() == 1:
+					return -1
+				self.update_metric_for_all_drones(width, height)
 
-					if (self.step == item[1]
-					    and self.all_drones):
-						self.all_drones[i].take_target(item[0])
-					
-			self.step += 1
-			self.check_drones()
+		for drone in self.all_drones:
+			if not drone.have_target:
+				target = self.take_targets(drone.id, step)
+				if not target == None:
+					drone.take_target(target)
+
+		counter_drones_in_target = 0
+		for drone in self.all_drones:
+			if drone.move_to_target(dt):
+				counter_drones_in_target += 1
+
+		self.check_drones()
+
+		if self.all_drones and counter_drones_in_target == len(self.all_drones):
+			return 1
 		return 0
-
-
-
-
-
-
 	
